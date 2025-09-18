@@ -1,0 +1,862 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Autism Screening + Chatbot</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    * {
+      box-sizing: border-box;
+      font-family: 'Inter', sans-serif;
+    }
+    body {
+      margin: 0;
+      background: linear-gradient(135deg, #10b981, #3b82f6);
+      color: #1f2937;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-start;
+      align-items: center;
+      min-height: 100vh;
+      padding: 40px 20px;
+      overflow-y: auto;
+    }
+    .container {
+      background: white;
+      border-radius: 16px;
+      padding: 32px 40px;
+      width: 100%;
+      max-width: 600px;
+      box-shadow: 0 8px 24px rgb(16 185 129 / 0.3);
+      margin-bottom: 20px;
+    }
+    h1 {
+      text-align: center;
+      color: #065f46;
+      margin-bottom: 24px;
+      font-size: 2.25rem;
+      font-weight: 700;
+    }
+    h2 {
+      color: #065f46;
+      font-size: 1.5rem;
+      font-weight: 600;
+      margin-top: 24px;
+      margin-bottom: 16px;
+    }
+    .progress {
+      height: 8px;
+      background: #e5e7eb;
+      border-radius: 4px;
+      margin-bottom: 24px;
+    }
+    .progress-bar {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(135deg, #10b981, #3b82f6);
+      border-radius: 4px;
+      transition: width 0.3s ease-in-out;
+    }
+    .question-section {
+      margin-bottom: 24px;
+      animation: fadeIn 0.5s ease-out;
+    }
+    .question-section h3 {
+      font-size: 1.25rem;
+      font-weight: 600;
+      color: #1f2937;
+      margin-bottom: 12px;
+    }
+    .radio-group {
+      display: flex;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+    .radio-group label {
+      background: #f3f4f6;
+      padding: 12px 20px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.2s ease-in-out;
+      border: 2px solid transparent;
+      flex: 1 1 auto;
+      text-align: center;
+    }
+    .radio-group label:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    }
+    .radio-group input[type="radio"] {
+      display: none;
+    }
+    .radio-group input[type="radio"]:checked + label {
+      background: #d1fae5;
+      border-color: #10b981;
+      color: #065f46;
+      font-weight: 600;
+      box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.2);
+    }
+    .input-group label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: 600;
+      color: #1f2937;
+    }
+    .input-group input,
+    .input-group select {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid #d1d5db;
+      border-radius: 8px;
+      margin-bottom: 16px;
+      font-size: 1rem;
+      transition: border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+    }
+    .input-group input:focus,
+    .input-group select:focus {
+      outline: none;
+      border-color: #10b981;
+      box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.2);
+    }
+    .input-group input:hover,
+    .input-group select:hover {
+      border-color: #10b981;
+      box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
+    }
+    .navigation-buttons {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 24px;
+    }
+    .navigation-buttons button,
+    #submitButton,
+    #retakeSurveyButton {
+      background: #065f46;
+      color: white;
+      padding: 12px 24px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 1rem;
+      font-weight: 600;
+      transition: background-color 0.2s ease-in-out, transform 0.1s ease-in-out;
+      box-shadow: 0 4px 12px rgba(6, 95, 70, 0.2);
+    }
+    .navigation-buttons button:hover,
+    #submitButton:hover,
+    #retakeSurveyButton:hover {
+      background: #047857;
+      transform: translateY(-2px);
+    }
+    .navigation-buttons button:disabled,
+    #submitButton:disabled,
+    #retakeSurveyButton:disabled {
+      background: #a1a1aa;
+      cursor: not-allowed;
+      box-shadow: none;
+    }
+    #resultContainer {
+      text-align: center;
+      margin-top: 32px;
+      padding: 24px;
+      border-radius: 12px;
+      background: #f9fafb;
+      border: 1px solid #e5e7eb;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+      animation: fadeIn 0.7s ease-out;
+    }
+    #resultText {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: #065f46;
+      margin-bottom: 16px;
+    }
+    #predictionChart {
+      max-width: 200px;
+      margin: 20px auto 0;
+    }
+    .result-icon {
+      font-size: 3rem;
+      margin-bottom: 15px;
+    }
+    .result-icon.high-likelihood {
+        color: #dc2626;
+    }
+    .result-icon.low-likelihood {
+        color: #065f46;
+    }
+
+    .chatbot-container {
+      background: white;
+      border-radius: 16px;
+      padding: 32px 40px;
+      width: 100%;
+      max-width: 600px;
+      box-shadow: 0 8px 24px rgb(16 185 129 / 0.3);
+      margin-top: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+    .chat-header {
+      font-size: 1.75rem;
+      font-weight: 700;
+      color: #065f46;
+      text-align: center;
+    }
+    .chat-messages {
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+      padding: 16px;
+      min-height: 200px;
+      max-height: 400px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      background: #f9fafb;
+    }
+    .chat-message {
+      padding: 8px 12px;
+      border-radius: 12px;
+      max-width: 80%;
+      word-wrap: break-word;
+      line-height: 1.4;
+    }
+    .user-message {
+      background: #d1fae5;
+      align-self: flex-end;
+      color: #065f46;
+    }
+    .bot-message {
+      background: #e0f2f7;
+      align-self: center;
+      color: #0056b3;
+    }
+    .chat-input-group {
+      display: flex;
+      gap: 10px;
+    }
+    .chat-input-group input {
+      flex-grow: 1;
+      padding: 12px;
+      border: 1px solid #d1d5db;
+      border-radius: 8px;
+      font-size: 1rem;
+    }
+    .chat-input-group button {
+      background: #3b82f6;
+      color: white;
+      padding: 12px 20px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 1rem;
+      font-weight: 600;
+      transition: background-color 0.2s ease-in-out, transform 0.1s ease-in-out;
+      box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2);
+    }
+    .chat-input-group button:hover {
+      background: #2563eb;
+      transform: translateY(-2px);
+    }
+    .chat-input-group button:disabled {
+      background: #a1a1aa;
+      cursor: not-allowed;
+      box-shadow: none;
+    }
+    .chat-predefined-questions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      justify-content: center;
+      margin-top: 10px;
+    }
+    .chat-question {
+      background: #e0f2f7;
+      padding: 8px 15px;
+      border-radius: 20px;
+      cursor: pointer;
+      font-size: 0.9rem;
+      color: #0056b3;
+      transition: background-color 0.2s;
+    }
+    .chat-question:hover {
+      background: #b3e0ed;
+    }
+    .loading-indicator {
+      text-align: center;
+      margin-top: 10px;
+      font-style: italic;
+      color: #6b7280;
+    }
+    .error-message {
+      color: #dc2626;
+      margin-top: 10px;
+      font-weight: 600;
+      text-align: center;
+    }
+    
+    @media (max-width: 640px) {
+      body {
+        padding: 20px 10px;
+      }
+      .container, .chatbot-container {
+        padding: 20px;
+        border-radius: 12px;
+      }
+      h1 {
+        font-size: 1.75rem;
+      }
+      h2 {
+        font-size: 1.25rem;
+      }
+      .radio-group label {
+        padding: 10px 15px;
+        font-size: 0.9rem;
+      }
+      .navigation-buttons {
+        flex-direction: column;
+        gap: 10px;
+      }
+      .navigation-buttons button,
+      #submitButton,
+      #retakeSurveyButton {
+        width: 100%;
+      }
+      .chat-header {
+        font-size: 1.5rem;
+      }
+      .chat-message {
+        max-width: 95%;
+      }
+    }
+
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Autism Spectrum Disorder Screening</h1>
+    <p class="text-center text-gray-700 mb-6">Please answer the following questions to help us assess the likelihood of Autism Spectrum Disorder. This tool is for informational purposes only and does not substitute professional medical advice.</p>
+    <div class="progress">
+      <div class="progress-bar" id="progressBar"></div>
+    </div>
+
+    <div id="surveyQuestions">
+    </div>
+    <div id="surveyErrorMessage" class="error-message hidden"></div>
+
+    <div class="navigation-buttons">
+      <button id="prevButton" class="hidden">Previous</button>
+      <button id="nextButton">Next</button>
+      <button id="submitButton" class="hidden">Submit</button>
+    </div>
+
+    <div id="resultContainer" class="hidden">
+      <h2>Prediction Result</h2>
+      <div id="resultIcon" class="result-icon"></div>
+      <p id="resultText"></p>
+      <canvas id="predictionChart"></canvas>
+      <button id="retakeSurveyButton" class="mt-8">Retake Survey</button>
+    </div>
+  </div>
+
+  <div class="chatbot-container">
+    <div class="chat-header">Autism Information Chatbot</div>
+    <div class="chat-messages" id="chatMessages">
+      <div class="bot-message chat-message">Hello! I'm here to answer your questions about Autism Spectrum Disorder. How can I help you today?</div>
+    </div>
+    <div class="chat-input-group">
+      <input type="text" id="chatInput" placeholder="Ask a question..." />
+      <button id="sendChatButton">Send</button>
+    </div>
+    <div class="loading-indicator hidden" id="chatLoading">Typing...</div>
+    <div class="chat-predefined-questions" id="chatQuestions">
+    </div>
+  </div>
+
+  <script defer>
+    const surveyQuestionsDiv = document.getElementById('surveyQuestions');
+    const progressBar = document.getElementById('progressBar');
+    const prevButton = document.getElementById('prevButton');
+    const nextButton = document.getElementById('nextButton');
+    const submitButton = document.getElementById('submitButton');
+    const resultContainer = document.getElementById('resultContainer');
+    const resultIcon = document.getElementById('resultIcon');
+    const resultText = document.getElementById('resultText');
+    const predictionChartCanvas = document.getElementById('predictionChart');
+    const retakeSurveyButton = document.getElementById('retakeSurveyButton');
+    const surveyErrorMessage = document.getElementById('surveyErrorMessage');
+    let predictionChart = null;
+
+    const chatMessagesDiv = document.getElementById('chatMessages');
+    const chatInput = document.getElementById('chatInput');
+    const sendChatButton = document.getElementById('sendChatButton');
+    const chatLoading = document.getElementById('chatLoading');
+    const chatQuestionsContainer = document.getElementById('chatQuestions');
+
+    let currentQuestionIndex = 0;
+    let lastPredictionResult = null;
+
+    const surveyData = {
+      A1_Score: null, A2_Score: null, A3_Score: null, A4_Score: null, A5_Score: null,
+      A6_Score: null, A7_Score: null, A8_Score: null, A9_Score: null, A10_Score: null,
+      age: null,
+      gender: null, 
+      ethnicity: null, 
+      jaundice: null, 
+      austim: null, 
+      country_of_res: null,
+      used_app_before: null,
+      relation: null 
+    };
+
+    const questions = [
+      { id: 'A1_Score', type: 'radio', text: 'Does your child look at you when you call his/her name?', options: [{value: 0, text: 'Always'}, {value: 1, text: 'Rarely/Never'}]},
+      { id: 'A2_Score', type: 'radio', text: 'How easy is it for you to get eye contact with your child?', options: [{value: 0, text: 'Very easy'}, {value: 1, text: 'Difficult/Never'}]},
+      { id: 'A3_Score', type: 'radio', text: 'Does your child point to indicate that he/she wants something?', options: [{value: 0, text: 'Yes'}, {value: 1, text: 'No'}]},
+      { id: 'A4_Score', type: 'radio', text: 'Does your child point to share interest with you?', options: [{value: 0, text: 'Yes'}, {value: 1, text: 'No'}]},
+      { id: 'A5_Score', type: 'radio', text: 'Does your child pretend play?', options: [{value: 0, text: 'Often'}, {value: 1, text: 'Never'}]},
+      { id: 'A6_Score', type: 'radio', text: 'Does your child follow where you are looking?', options: [{value: 0, text: 'Always'}, {value: 1, text: 'Never'}]},
+      { id: 'A7_Score', type: 'radio', text: 'If you or someone else in the family is visibly upset, does your child show signs of wanting to comfort them?', options: [{value: 0, text: 'Yes'}, {value: 1, text: 'No'}]},
+      { id: 'A8_Score', type: 'radio', text: 'Would you describe your child\'s first words as unusual?', options: [{value: 1, text: 'Yes'}, {value: 0, text: 'No'}]},
+      { id: 'A9_Score', type: 'radio', text: 'Does your child use simple gestures (e.g. wave bye-bye)?', options: [{value: 0, text: 'Often'}, {value: 1, text: 'Rarely/Never'}]},
+      { id: 'A10_Score', type: 'radio', text: 'Is your child happy when you are doing something with them?', options: [{value: 0, text: 'Always'}, {value: 1, text: 'Never'}]},
+      { id: 'age', type: 'number', text: 'What is your child\'s age (in years)?' },
+      { id: 'gender', type: 'select', text: 'What is your child\'s gender?', options: [
+        {value: '', text: 'Select Gender'},
+        {value: 'm', text: 'Male'},
+        {value: 'f', text: 'Female'}
+      ]},
+      { id: 'ethnicity', type: 'select', text: 'What is your child\'s ethnicity?', options: [
+        {value: '', text: 'Select Ethnicity'},
+        {value: 'White-European', text: 'White-European'},
+        {value: 'Middle Eastern', text: 'Middle Eastern'},
+        {value: 'Asian', text: 'Asian'},
+        {value: 'Black', text: 'Black'},
+        {value: 'South Asian', text: 'South Asian'},
+        {value: 'Pasifika', text: 'Pasifika'},
+        {value: 'Latino', text: 'Latino'},
+        {value: 'Hispanic', text: 'Hispanic'},
+        {value: 'Turkish', text: 'Turkish'},
+        {value: 'Others', text: 'Others'}
+      ]},
+      { id: 'jaundice', type: 'radio', text: 'Was your child born with jaundice?', options: [{value: 'yes', text: 'Yes'}, {value: 'no', text: 'No'}]},
+      { id: 'austim', type: 'radio', text: 'Does anyone in your immediate family have a diagnosis of autism?', options: [{value: 'yes', text: 'Yes'}, {value: 'no', text: 'No'}]},
+      { id: 'country_of_res', type: 'text', text: 'What is your child\'s country of residence?' },
+      { id: 'used_app_before', type: 'radio', text: 'Have you used a screening app before for autism?', options: [{value: 'yes', text: 'Yes'}, {value: 'no', text: 'No'}]},
+      { id: 'relation', type: 'select', text: 'What is your relation to the child?', options: [
+        {value: '', text: 'Select Relation'},
+        {value: 'Self', text: 'Self'},
+        {value: 'Parent', text: 'Parent'},
+        {value: 'Relative', text: 'Relative'},
+        {value: 'Health care professional', text: 'Health care professional'},
+        {value: 'Others', text: 'Others'}
+      ]}
+    ];
+
+    function renderQuestion() {
+      surveyErrorMessage.classList.add('hidden');
+      const q = questions[currentQuestionIndex];
+      surveyQuestionsDiv.innerHTML = '';
+      let questionHtml = `<div class="question-section"><h3>${currentQuestionIndex + 1}. ${q.text}</h3>`;
+
+      if (q.type === 'radio') {
+        questionHtml += `<div class="radio-group">`;
+        q.options.forEach(option => {
+          const checked = surveyData[q.id] === option.value ? 'checked' : '';
+          questionHtml += `
+            <input type="radio" id="${q.id}-${option.value}" name="${q.id}" value="${option.value}" ${checked}>
+            <label for="${q.id}-${option.value}">${option.text}</label>
+          `;
+        });
+        questionHtml += `</div>`;
+      } else if (q.type === 'number' || q.type === 'text') {
+        const value = surveyData[q.id] !== null ? `value="${surveyData[q.id]}"` : '';
+        const type = q.type === 'number' ? 'number" min="0' : 'text';
+        questionHtml += `
+          <div class="input-group">
+            <input type="${type}" id="${q.id}" ${value} placeholder="${q.text}" class="rounded-lg p-3 border-gray-300 focus:ring-teal-500 focus:border-teal-500 block w-full shadow-sm sm:text-sm border">
+          </div>
+        `;
+      } else if (q.type === 'select') {
+        questionHtml += `<div class="input-group"><select id="${q.id}" class="rounded-lg p-3 border-gray-300 focus:ring-teal-500 focus:border-teal-500 block w-full shadow-sm sm:text-sm border">`;
+        q.options.forEach(option => {
+          const selected = surveyData[q.id] === option.value ? 'selected' : '';
+          questionHtml += `<option value="${option.value}" ${selected}>${option.text}</option>`;
+        });
+        questionHtml += `</select></div>`;
+      }
+      questionHtml += `</div>`;
+      surveyQuestionsDiv.innerHTML = questionHtml;
+
+      const currentInput = document.getElementById(q.id) || surveyQuestionsDiv.querySelector(`input[name="${q.id}"]`);
+      if (currentInput) {
+        if (q.type === 'radio') {
+          surveyQuestionsDiv.querySelectorAll(`input[name="${q.id}"]`).forEach(input => {
+            input.addEventListener('change', (e) => {
+              surveyData[q.id] = isNaN(e.target.value) ? e.target.value : parseFloat(e.target.value);
+              updateNavigationButtons();
+            });
+          });
+        } else {
+          currentInput.addEventListener('input', (e) => {
+            surveyData[q.id] = isNaN(e.target.value) ? e.target.value : parseFloat(e.target.value);
+            updateNavigationButtons();
+          });
+        }
+      }
+      updateProgressBar();
+      updateNavigationButtons();
+    }
+
+    function updateProgressBar() {
+      const progress = ((currentQuestionIndex + 1) / questions.length) * 100;
+      progressBar.style.width = `${progress}%`;
+    }
+
+    function validateCurrentQuestion() {
+        surveyErrorMessage.classList.add('hidden');
+        const currentQ = questions[currentQuestionIndex];
+        const answer = surveyData[currentQ.id];
+
+        if (answer === null || answer === '') {
+            surveyErrorMessage.textContent = 'Please answer this question to proceed.';
+            surveyErrorMessage.classList.remove('hidden');
+            return false;
+        }
+
+        if (currentQ.id === 'age') {
+            if (isNaN(answer) || answer <= 0 || !Number.isInteger(answer)) {
+                surveyErrorMessage.textContent = 'Please enter a valid positive integer for age.';
+                surveyErrorMessage.classList.remove('hidden');
+                return false;
+            }
+        }
+        return true;
+    }
+
+    function updateNavigationButtons() {
+      prevButton.classList.toggle('hidden', currentQuestionIndex === 0);
+      nextButton.classList.toggle('hidden', currentQuestionIndex === questions.length - 1);
+      submitButton.classList.toggle('hidden', currentQuestionIndex !== questions.length - 1);
+
+      const currentQ = questions[currentQuestionIndex];
+      const isAnswered = surveyData[currentQ.id] !== null && surveyData[currentQ.id] !== '';
+
+      nextButton.disabled = !isAnswered;
+      submitButton.disabled = !isAnswered;
+    }
+
+    prevButton.addEventListener('click', () => {
+      if (currentQuestionIndex > 0) {
+        currentQuestionIndex--;
+        renderQuestion();
+      }
+    });
+
+    nextButton.addEventListener('click', () => {
+      if (validateCurrentQuestion()) {
+          if (currentQuestionIndex < questions.length - 1) {
+              currentQuestionIndex++;
+              renderQuestion();
+          }
+      }
+    });
+
+    submitButton.addEventListener('click', async () => {
+      if (!validateCurrentQuestion()) {
+          return;
+      }
+
+      surveyQuestionsDiv.classList.add('hidden');
+      prevButton.classList.add('hidden');
+      nextButton.classList.add('hidden');
+      submitButton.classList.add('hidden');
+      retakeSurveyButton.classList.add('hidden');
+      resultContainer.classList.remove('hidden');
+      resultText.textContent = 'Calculating prediction...';
+      resultText.style.color = '#1f2937';
+      resultIcon.innerHTML = '';
+      resultIcon.classList.remove('high-likelihood', 'low-likelihood');
+
+      if (predictionChart) {
+        predictionChart.destroy();
+      }
+
+      try {
+        const response = await fetch('http://localhost:5000/predict', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(surveyData),
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(`HTTP error! status: ${response.status}, message: ${errorData.error || 'Unknown error'}`);
+        }
+
+        const result = await response.json();
+        console.log("Backend prediction result:", result);
+        lastPredictionResult = result;
+
+        let predictionText = '';
+        let iconHtml = '';
+        if (result.prediction === 1) {
+          predictionText = 'Based on the screening, there is a HIGH likelihood of Autism Spectrum Disorder. We strongly recommend consulting a healthcare professional for a proper diagnosis and support.';
+          resultText.style.color = '#dc2626';
+          iconHtml = '&#9888;';
+          resultIcon.classList.add('high-likelihood');
+        } else {
+          predictionText = 'Based on the screening, there is a LOW likelihood of Autism Spectrum Disorder. While this is reassuring, if you still have concerns, consider consulting a healthcare professional for peace of mind.';
+          resultText.style.color = '#065f46';
+          iconHtml = '&#10003;';
+          resultIcon.classList.add('low-likelihood');
+        }
+        resultText.textContent = predictionText;
+        resultIcon.innerHTML = iconHtml;
+        retakeSurveyButton.classList.remove('hidden');
+
+        const ctx = predictionChartCanvas.getContext('2d');
+        const autismProbability = result.probability[1];
+        const nonAutismProbability = result.probability[0];
+
+        predictionChart = new Chart(ctx, {
+          type: 'pie',
+          data: {
+            labels: ['Low Likelihood', 'High Likelihood'],
+            datasets: [{
+              label: 'Probability',
+              data: [nonAutismProbability * 100, autismProbability * 100],
+              backgroundColor: [
+                'rgba(16, 185, 129, 0.7)',
+                'rgba(220, 38, 38, 0.7)'
+              ],
+              borderColor: [
+                'rgba(16, 185, 129, 1)',
+                'rgba(220, 38, 38, 1)'
+              ],
+              borderWidth: 1
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            plugins: {
+              legend: {
+                position: 'bottom',
+                labels: {
+                  font: {
+                    size: 14
+                  },
+                  color: '#1f2937'
+                }
+              },
+              tooltip: {
+                callbacks: {
+                  label: function(context) {
+                    let label = context.label || '';
+                    if (label) {
+                      label += ': ';
+                    }
+                    if (context.parsed !== null) {
+                      label += context.parsed.toFixed(2) + '%';
+                    }
+                    return label;
+                  }
+                }
+              },
+              title: {
+                display: true,
+                text: 'Prediction Probabilities',
+                font: {
+                  size: 18,
+                  weight: 'bold'
+                },
+                color: '#1f2937'
+              }
+            }
+          }
+        });
+
+        addChatbotQuestion("What do these results mean?");
+
+      } catch (error) {
+        console.error('Error during prediction:', error);
+        resultText.textContent = `Error during prediction: ${error.message}. Please try again later.`;
+        resultText.style.color = '#dc2626';
+        resultIcon.innerHTML = '&#x2716;';
+        resultIcon.classList.add('high-likelihood');
+        retakeSurveyButton.classList.remove('hidden');
+      }
+    });
+
+    retakeSurveyButton.addEventListener('click', () => {
+        currentQuestionIndex = 0;
+        for (const key in surveyData) {
+            surveyData[key] = null;
+        }
+        lastPredictionResult = null;
+        resultContainer.classList.add('hidden');
+        surveyQuestionsDiv.classList.remove('hidden');
+        renderQuestion();
+        chatMessagesDiv.innerHTML = '<div class="bot-message chat-message">Hello! I\'m here to answer your questions about Autism Spectrum Disorder. How can I help you today?</div>';
+        chatHistory = [];
+        systemInstructionAdded = false;
+        initializeChatbotQuestions();
+    });
+
+    renderQuestion();
+
+    const FAQS = {
+      "What is autism?": "Autism is a developmental condition that affects how people communicate, interact, and experience the world.",
+      "What are early signs of autism?": "Some signs include limited eye contact, delayed speech, repetitive behaviors, and difficulty with social interactions.",
+      "Can autism be cured?": "Autism is not a disease, so it isn’t something to be ‘cured’. However, therapies can help manage symptoms and support development.",
+      "Is autism hereditary?": "There is evidence suggesting genetic factors play a role in autism risk.",
+      "Can adults be diagnosed with autism?": "Yes, adults can be diagnosed, often after years of unnoticed symptoms.",
+      "What therapies help with autism?": "Therapies include behavioral therapy, speech therapy, occupational therapy, and social skills training.",
+    };
+
+    let chatHistory = [];
+    let systemInstructionAdded = false;
+
+    function initializeChatbotQuestions() {
+        chatQuestionsContainer.innerHTML = '';
+        Object.keys(FAQS).forEach(q => {
+            const btn = document.createElement("div");
+            btn.className = "chat-question";
+            btn.textContent = q;
+            btn.onclick = async () => {
+                addMessage(q, 'user');
+                await sendChatQuery(q);
+            };
+            chatQuestionsContainer.appendChild(btn);
+        });
+    }
+
+    function addChatbotQuestion(questionText) {
+        if (chatQuestionsContainer.querySelector(`.chat-question[data-question="${questionText}"]`)) {
+            return;
+        }
+        const btn = document.createElement("div");
+        btn.className = "chat-question";
+        btn.textContent = questionText;
+        btn.dataset.question = questionText;
+        btn.onclick = async () => {
+            addMessage(questionText, 'user');
+            if (questionText === "What do these results mean?" && lastPredictionResult) {
+                let prompt = `A user has just completed an autism screening. Their result is: ${lastPredictionResult.prediction === 1 ? 'HIGH likelihood of Autism Spectrum Disorder' : 'LOW likelihood of Autism Spectrum Disorder'}. The probabilities were: Low likelihood: ${lastPredictionResult.probability[0].toFixed(2)}, High likelihood: ${lastPredictionResult.probability[1].toFixed(2)}. Please provide a clear, empathetic, and informative explanation of these results. Emphasize that this is a screening tool, not a diagnosis, and always recommend consulting a healthcare professional for next steps. Keep the response concise and actionable.`;
+                await sendChatQuery(prompt);
+            } else if (FAQS[questionText]) {
+                addMessage(FAQS[questionText], 'bot');
+                chatHistory.push({ role: "user", parts: [{ text: questionText }] });
+                chatHistory.push({ role: "model", parts: [{ text: FAQS[questionText] }] });
+            } else {
+                await sendChatQuery(questionText);
+            }
+        };
+        chatQuestionsContainer.appendChild(btn);
+    }
+
+    function addMessage(text, sender) {
+      const messageElement = document.createElement('div');
+      messageElement.classList.add('chat-message', `${sender}-message`);
+      text = text.replace(/\*\*/g, '');
+      messageElement.innerHTML = text.replace(/\n\n/g, '<br><br>').replace(/\n/g, '<br>');
+      chatMessagesDiv.appendChild(messageElement);
+      chatMessagesDiv.scrollTop = chatMessagesDiv.scrollHeight;
+    }
+
+    async function sendChatQuery(initialPrompt = null) {
+      const userMessage = initialPrompt || chatInput.value.trim();
+      if (!userMessage) return;
+
+      if (!initialPrompt) {
+        addMessage(userMessage, 'user');
+        chatInput.value = '';
+      }
+      
+      chatInput.disabled = true;
+      sendChatButton.disabled = true;
+      chatLoading.classList.add('hidden');
+
+      try {
+        let currentConversationPayload = [];
+
+        if (!systemInstructionAdded) {
+            currentConversationPayload.push({
+                role: "user",
+                parts: [{text: "You are an empathetic and informative AI assistant specializing in Autism Spectrum Disorder (ASD). Provide clear, concise, and helpful information. Always recommend consulting a healthcare professional for diagnosis or personalized advice."}]
+            });
+            currentConversationPayload.push({
+                role: "model",
+                parts: [{text: "Understood. I'm ready to provide information and guidance on ASD, always emphasizing professional medical consultation."}]
+            });
+            systemInstructionAdded = true;
+        }
+
+        chatHistory.forEach(msg => {
+            currentConversationPayload.push(msg);
+        });
+
+        currentConversationPayload.push({ role: "user", parts: [{ text: userMessage }] });
+
+        const payload = { 
+            contents: currentConversationPayload
+        };
+        const apiKey = "AIzaSyCazKoua6B-MRireCwojndZSF0MynvQY2M";
+        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+
+        const response = await fetch(apiUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        const result = await response.json();
+
+        if (result.candidates && result.candidates.length > 0 &&
+            result.candidates[0].content && result.candidates[0].content.parts &&
+            result.candidates[0].content.parts.length > 0) {
+          const botResponse = result.candidates[0].content.parts[0].text;
+          addMessage(botResponse, 'bot');
+          
+          chatHistory.push({ role: "user", parts: [{ text: userMessage }] });
+          chatHistory.push({ role: "model", parts: [{ text: botResponse }] });
+
+        } else {
+          addMessage("I'm sorry, I couldn't generate a response. Please try again.", 'bot');
+          console.error("Gemini API response structure unexpected or empty candidates:", result);
+        }
+      } catch (error) {
+        console.error("Error calling Gemini API:", error);
+        addMessage("An error occurred while connecting to the chatbot. Please try again later.", 'bot');
+      } finally {
+        chatInput.disabled = false;
+        sendChatButton.disabled = false;
+        chatLoading.classList.add('hidden');
+        chatInput.focus();
+      }
+    }
+
+    sendChatButton.addEventListener('click', sendChatQuery);
+    chatInput.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') {
+        sendChatQuery();
+      }
+    });
+
+    initializeChatbotQuestions();
+
+  </script>
+</body>
+</html>
